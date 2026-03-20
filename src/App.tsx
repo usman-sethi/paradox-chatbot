@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import { Send, User, Bot, Settings, Heart, ArrowLeft, Loader2, Sparkles, Mic, MicOff, Sun, Moon, Camera } from 'lucide-react';
+import { Send, User, Bot, Settings, Heart, ArrowLeft, Loader2, Sparkles, Mic, MicOff, Sun, Moon, Camera, Lock, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -61,6 +61,9 @@ const PERSONAS = [
 ];
 
 export default function App() {
+  const [authStep, setAuthStep] = useState(0); // 0: Initial, 1: Master, 2: Authenticated
+  const [authPassword, setAuthPassword] = useState('');
+  const [masterPassword, setMasterPassword] = useState('');
   const [isConfigured, setIsConfigured] = useState(false);
   const [name, setName] = useState('');
   const [persona, setPersona] = useState(PERSONAS[0].id);
@@ -362,6 +365,29 @@ Make the user feel heard, safe, and supported.
     });
   };
 
+  const handleInitialAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authPassword === 'password') {
+      setAuthStep(1);
+    } else if (authPassword === '0000') {
+      // Shortcut if they enter master password directly
+      setAuthStep(2);
+    } else {
+      alert('Incorrect password. Please ask Usman Sethi for the password.');
+      setAuthPassword('');
+    }
+  };
+
+  const handleMasterAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (masterPassword === '0000') {
+      setAuthStep(2);
+    } else {
+      alert('Incorrect master password.');
+      setMasterPassword('');
+    }
+  };
+
   const handleStart = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!name.trim() || !aiName.trim()) return;
@@ -475,7 +501,149 @@ Make the user feel heard, safe, and supported.
   return (
     <div className={cn("min-h-screen font-sans transition-colors duration-300 selection:bg-emerald-500/30", themeClasses.bg, themeClasses.text)}>
       <AnimatePresence mode="wait">
-        {!isConfigured ? (
+        {authStep === 0 ? (
+          <motion.div 
+            key="auth-initial"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="min-h-screen flex items-center justify-center p-4 relative"
+          >
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={cn(
+                "absolute top-6 right-6 p-3 rounded-full transition-all border shadow-sm",
+                themeClasses.cardBg,
+                themeClasses.cardBorder,
+                isDarkMode ? "hover:bg-stone-800" : "hover:bg-stone-50"
+              )}
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-stone-600" />}
+            </button>
+
+            <div className={cn("w-full max-w-md rounded-3xl shadow-xl shadow-stone-900/5 p-8 border transition-colors duration-300", themeClasses.cardBg, themeClasses.cardBorder)}>
+              <div className="flex justify-center mb-6">
+                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-colors duration-300", themeClasses.iconBg)}>
+                  <Lock className={cn("w-8 h-8 transition-colors duration-300", themeClasses.iconColor)} />
+                </div>
+              </div>
+              
+              <h1 className="text-2xl font-semibold text-center mb-2">Access Restricted</h1>
+              <p className={cn("text-center mb-8 text-sm transition-colors duration-300", themeClasses.mutedText)}>
+                Please ask Usman Sethi for the password to access this application.
+              </p>
+              
+              <form onSubmit={handleInitialAuth} className="space-y-6">
+                <div>
+                  <label className={cn("block text-sm font-medium mb-1.5", isDarkMode ? "text-stone-300" : "text-stone-700")}>Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Key className={cn("w-4 h-4", themeClasses.mutedText)} />
+                    </div>
+                    <input 
+                      type="password" 
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className={cn(
+                        "w-full pl-11 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all",
+                        themeClasses.inputBg,
+                        themeClasses.inputBorder,
+                        themeClasses.ring,
+                        isDarkMode ? "placeholder:text-stone-600" : "placeholder:text-stone-400"
+                      )}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={!authPassword.trim()}
+                  className={cn(
+                    "w-full py-3.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                    themeClasses.primaryBtn
+                  )}
+                >
+                  Unlock App
+                </button>
+              </form>
+            </div>
+          </motion.div>
+        ) : authStep === 1 ? (
+          <motion.div 
+            key="auth-master"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            className="min-h-screen flex items-center justify-center p-4 relative"
+          >
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={cn(
+                "absolute top-6 right-6 p-3 rounded-full transition-all border shadow-sm",
+                themeClasses.cardBg,
+                themeClasses.cardBorder,
+                isDarkMode ? "hover:bg-stone-800" : "hover:bg-stone-50"
+              )}
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-stone-600" />}
+            </button>
+
+            <div className={cn("w-full max-w-md rounded-3xl shadow-xl shadow-stone-900/5 p-8 border transition-colors duration-300", themeClasses.cardBg, themeClasses.cardBorder)}>
+              <div className="flex justify-center mb-6">
+                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-colors duration-300", themeClasses.iconBg)}>
+                  <Settings className={cn("w-8 h-8 transition-colors duration-300", themeClasses.iconColor)} />
+                </div>
+              </div>
+              
+              <h1 className="text-2xl font-semibold text-center mb-2">Master Password</h1>
+              <p className={cn("text-center mb-8 text-sm transition-colors duration-300", themeClasses.mutedText)}>
+                Please enter the master password to access the dashboard.
+              </p>
+              
+              <form onSubmit={handleMasterAuth} className="space-y-6">
+                <div>
+                  <label className={cn("block text-sm font-medium mb-1.5", isDarkMode ? "text-stone-300" : "text-stone-700")}>Master Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Key className={cn("w-4 h-4", themeClasses.mutedText)} />
+                    </div>
+                    <input 
+                      type="password" 
+                      value={masterPassword}
+                      onChange={(e) => setMasterPassword(e.target.value)}
+                      placeholder="Enter master password"
+                      className={cn(
+                        "w-full pl-11 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all",
+                        themeClasses.inputBg,
+                        themeClasses.inputBorder,
+                        themeClasses.ring,
+                        isDarkMode ? "placeholder:text-stone-600" : "placeholder:text-stone-400"
+                      )}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={!masterPassword.trim()}
+                  className={cn(
+                    "w-full py-3.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                    themeClasses.primaryBtn
+                  )}
+                >
+                  Access Dashboard
+                </button>
+              </form>
+            </div>
+          </motion.div>
+        ) : !isConfigured ? (
           <motion.div 
             key="setup"
             initial={{ opacity: 0, y: 20 }}
