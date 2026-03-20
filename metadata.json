@@ -1,0 +1,5 @@
+{
+  "name": "AI Best Friend Chat",
+  "description": "A deeply caring, emotionally intelligent AI companion that talks like a real human best friend.",
+  "requestFramePermissions": ["microphone"]
+}
