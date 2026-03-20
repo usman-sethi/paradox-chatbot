@@ -203,8 +203,8 @@ export default function App() {
   };
 
   const initChat = (currentName: string, currentAiName: string, currentPersona: string, history: Message[] = []) => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    const ai = new GoogleGenAI({ apiKey });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+    const ai = new GoogleGenAI({ apiKey: apiKey || 'missing-key' });
     const selectedPersona = PERSONAS.find(p => p.id === currentPersona);
     
     const formattedHistory = history.map(m => ({
@@ -382,8 +382,13 @@ Make the user feel heard, safe, and supported.
         const text = response.text || `Hi ${name}! I'm here for you. ❤️`;
         setMessages([{ id: Date.now().toString(), role: 'model', text }]);
         saveMessageToDb('model', text, sessionId);
-      } catch (error) {
-        const text = `Hi ${name}! I'm here for you. ❤️`;
+      } catch (error: any) {
+        console.error("Error generating initial greeting:", error);
+        let text = `Hi ${name}! I'm here for you. ❤️`;
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+        if (!apiKey) {
+          text = "⚠️ System Error: Gemini API Key is missing! Please add VITE_GEMINI_API_KEY to your Vercel Environment Variables and redeploy.";
+        }
         setMessages([{ id: Date.now().toString(), role: 'model', text }]);
         saveMessageToDb('model', text, sessionId);
       } finally {
@@ -412,9 +417,19 @@ Make the user feel heard, safe, and supported.
       const text = response.text;
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text }]);
       saveMessageToDb('model', text, sessionId);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
-      const text = "Sorry yaar, network issue lag raha hai. Thodi der baad try karein? 🥺";
+      let text = "Sorry yaar, network issue lag raha hai. Thodi der baad try karein? 🥺";
+      
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+      if (!apiKey) {
+        text = "⚠️ System Error: Gemini API Key is missing! Please add VITE_GEMINI_API_KEY to your Vercel Environment Variables and redeploy.";
+      } else if (error?.message?.includes('API key') || error?.status === 403 || error?.status === 401) {
+        text = "⚠️ System Error: Invalid Gemini API Key. Please check your VITE_GEMINI_API_KEY in Vercel.";
+      } else if (error?.message) {
+        console.error("Detailed AI Error:", error.message);
+      }
+
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text }]);
       saveMessageToDb('model', text, sessionId);
     } finally {
